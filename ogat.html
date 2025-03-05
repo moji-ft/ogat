@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>اوقات شرعی | Prayer Times</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@100..900&display=swap');
+        body {font-family: 'Vazirmatn', sans-serif;}
+    </style>
+</head>
+<body class="bg-gradient-to-br from-blue-900 to-purple-900 min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <div class="max-w-2xl mx-auto mb-12 text-center">
+            <h1 class="text-4xl font-bold text-white mb-4">اوقات شرعی شهرها</h1>
+            
+            <form onsubmit="fetchPrayerTimes(event)" class="flex gap-2">
+                <input 
+                    type="text" 
+                    id="cityInput"
+                    placeholder="نام شهر را وارد کنید..." 
+                    class="flex-1 rounded-lg px-4 py-3 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                >
+                <button 
+                    type="submit"
+                    class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-lg transition-colors"
+                >
+                    نمایش اوقات
+                </button>
+            </form>
+        </div>
+
+        <div id="resultContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto"></div>
+    </div>
+
+    <script>
+        async function fetchPrayerTimes(e) {
+            e.preventDefault();
+            const city = document.getElementById('cityInput').value;
+            if(!city) return;
+
+            try {
+                const response = await fetch(
+                    `https://one-api.ir/owghat/?token=152327:67c688a11fcfe&city=${encodeURIComponent(city)}&en_num=true`
+                );
+                
+                const data = await response.json();
+                
+                if(data.status === 404) {
+                    alert('شهر مورد نظر یافت نشد');
+                    return;
+                }
+
+                if(data.status === 200) {
+                    displayPrayerTimes(data.result);
+                }
+            } catch (error) {
+                alert('خطا در دریافت اطلاعات');
+                console.error(error);
+            }
+        }
+
+        function displayPrayerTimes(prayerData) {
+            const container = document.getElementById('resultContainer');
+            const translations = {
+                azan_sobh: 'اذان صبح',
+                toloe_aftab: 'طلوع آفتاب',
+                azan_zohre: 'اذان ظهر',
+                ghorob_aftab: 'غروب آفتاب',
+                azan_maghreb: 'اذان مغرب',
+                nime_shabe_sharie: 'نیمه شب شرعی',
+                month: 'ماه',
+                day: 'روز',
+                longitude: 'طول جغرافیایی',
+                latitude: 'عرض جغرافیایی'
+            };
+
+            const cards = Object.entries(prayerData).map(([key, value]) => {
+                if(key === 'status' || key === 'city') return '';
+                return `
+                    <div class="bg-white/10 backdrop-blur-sm rounded-xl p-6 text-white hover:transform hover:scale-105 transition-all">
+                        <div class="text-lg font-medium mb-2">${translations[key] || key}</div>
+                        <div class="text-3xl font-bold">${value}</div>
+                    </div>
+                `;
+            }).join('');
+
+            container.innerHTML = `
+                <div class="col-span-full mb-8">
+                    <div class="bg-white/10 backdrop-blur-sm rounded-xl p-6 text-center">
+                        <h2 class="text-2xl font-bold">${prayerData.city}</h2>
+                        <p class="text-gray-200">تاریخ: ${prayerData.day}/${prayerData.month}</p>
+                    </div>
+                </div>
+                ${cards}
+            `;
+        }
+
+        window.onload = () => fetchPrayerTimes({preventDefault: () => {}});
+    </script>
+</body>
+</html>
